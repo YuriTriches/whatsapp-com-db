@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Search, MessageSquare, CheckCheck, Paperclip, Smile, Send, Settings, LogOut, Lock } from 'lucide-react';
+import { MessageSquare, CheckCheck, Smile, Send, Settings, LogOut, Lock } from 'lucide-react';
 
 // --- CONFIGURAÇÃO SUPABASE ---
-const SUPABASE_URL = 'SUA_URL_AQUI';
-const SUPABASE_KEY = 'SUA_KEY_ANON_AQUI';
+const SUPABASE_URL = 'https://ijveixgjwttrlgixelcg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Rrm_LyKKsEFjS_NVM1ui1A_fPC0IH4F';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function App() {
@@ -20,22 +20,19 @@ function App() {
   // 1. CARREGAR DADOS E REALTIME
   useEffect(() => {
     if (tela === 'chat' && usuario.id) {
-      // Buscar Contatos
       const buscarContatos = async () => {
         const { data } = await supabase.from('usuarios').select('*').neq('id', usuario.id);
         if (data) setListaContatos(data);
       };
 
-      // Buscar Mensagens Iniciais
       const buscarMensagens = async () => {
-        const { data } = await supabase.from('mensagens').select('*');
+        const { data } = await supabase.from('mensagens').select('*').order('enviada_em', { ascending: true });
         if (data) setMensagens(data);
       };
 
       buscarContatos();
       buscarMensagens();
 
-      // INSCRIÇÃO REALTIME (Ouve novas mensagens no banco)
       const canal = supabase
         .channel('chat-geral')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, (payload) => {
@@ -47,12 +44,11 @@ function App() {
     }
   }, [tela, usuario.id]);
 
-  // Auto-scroll para a última mensagem
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [mensagens]);
 
-  // 2. AUTH (LOGIN / REGISTRO)
+  // 2. AUTH (LOGIN / REGISTRO) - Agora usando apenas 'nome'
   const lidarAuth = async (e: React.FormEvent, tipo: 'login' | 'registro') => {
     e.preventDefault();
     if (tipo === 'registro') {
@@ -70,7 +66,7 @@ function App() {
         .select('*')
         .eq('nome', usuario.nome)
         .eq('senha', usuario.senha)
-        .single();
+        .maybeSingle();
 
       if (error || !data) return alert("Usuário ou senha incorretos!");
       setUsuario(data);
@@ -91,8 +87,12 @@ function App() {
       }
     ]);
 
-    if (error) alert("Erro ao enviar!");
-    setNovaMensagem('');
+    if (error) {
+      console.error("Erro ao enviar:", error);
+      alert(`Erro ao enviar: ${error.message}`);
+    } else {
+      setNovaMensagem('');
+    }
   };
 
   // 4. ATUALIZAR PERFIL
@@ -168,7 +168,7 @@ function App() {
           )}
         </aside>
 
-        {/* CHAT AREA */}
+        {/* ÁREA DO CHAT */}
         <main className="flex-1 flex flex-col bg-[#efeae2] relative">
           {contatoAtivo ? (
             <>
@@ -181,7 +181,7 @@ function App() {
                   <div key={i} className={`p-2 rounded-lg shadow-sm max-w-[65%] ${msg.remetente_id === usuario.id ? 'bg-[#d9fdd3] self-end' : 'bg-white self-start'}`}>
                     <p>{msg.conteudo}</p>
                     <span className="text-[10px] text-gray-400 block text-right">
-                      {new Date(msg.enviada_em).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {msg.enviada_em ? new Date(msg.enviada_em).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}
                       {msg.remetente_id === usuario.id && <CheckCheck size={14} className="inline ml-1 text-[#53bdeb]" />}
                     </span>
                   </div>
@@ -206,4 +206,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
