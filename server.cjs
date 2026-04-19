@@ -6,9 +6,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Substitua pelos seus dados do painel do Supabase
-const SUPABASE_URL = 'https://ijveixgjwttrlgixelcg.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Rrm_LyKKsEFjS_NVM1ui1A_fPC0IH4F';
+const SUPABASE_URL = '';
+const SUPABASE_KEY = '';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 1. REGISTRAR
